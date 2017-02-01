@@ -1,3 +1,33 @@
 <resources>
     <string name="app_name">HitDetector</string>
+    <string name="end">end</string>
+    <string name="prepare">prepare</string>
+    <string name="hit">hit</string>
+    <string name="not">not</string>
+    <string name="best_time">Best Time:</string>
+    <string name="last_time">Last Time:</string>
+    <string name="last_5">last 5</string>
+    <string name="x">X</string>
+    <string name="remaining">Remaning</string>
+    <string name="all_results">All results</string>
+    <string name="again">Again</string>
+    <string name="reaction">REACTION</string>
+    <string name="decision">DECISION</string>
+    <string name="results">RESULTS</string>
+    <string name="sound">Sound</string>
+    <string name="visual">Visual</string>
+    <string name="gong">GONG</string>
+    <string name="shoot">SHOOT</string>
+    <string name="beep">BEEP</string>
+    <string name="whistle">WHISTLE</string>
+    <string name="hajime">HAJIME</string>
+    <string name="from_file">FROM FILE</string>
+    <string name="amplitude">AMPLITUDE</string>
+    <string name="training_time">TRAINING TIME</string>
+    <string name="punch_counter">PUNCH COUNTER</string>
+    <string name="how_many">HOW MANY</string>
+    <string name="start">START</string>
+    <string name="saved_best_score">shBestScore</string>
+    <string name="wait_prompt">wait for setup</string>
+    <string name="test_amplitude">amp test</string>
 </resources>

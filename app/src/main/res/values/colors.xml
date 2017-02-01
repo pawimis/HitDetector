@@ -7,6 +7,7 @@
     <color name="selected">#432929</color>
     <color name="soundUnselected">#614140</color>
     <color name="soundSelected">#230606</color>
+    <color name="white">#FFFFFF</color>
 
 </resources>
 

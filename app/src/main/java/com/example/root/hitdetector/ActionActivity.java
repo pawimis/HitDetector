@@ -1,27 +1,29 @@
 package com.example.root.hitdetector;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
-import android.os.Handler;
-import android.provider.MediaStore;
-import android.support.v7.app.AppCompatActivity;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.preference.PreferenceManager;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.ListIterator;
-import java.util.Random;
 
 public class ActionActivity extends AppCompatActivity{
 
+    private static final String SEC = " sec";
     RelativeLayout relativeLayout;
 
     TextView textScore1;
@@ -42,7 +44,7 @@ public class ActionActivity extends AppCompatActivity{
     TextView textScoreLastScores;
     boolean visualStimulus;
     boolean soundStimulus;
-    int sound;
+    Uri sound;
     int amplitude;
     boolean timeSetTraining;
     boolean punchSetTrainig;
@@ -52,6 +54,7 @@ public class ActionActivity extends AppCompatActivity{
     int savedTraningValues;
     int trainingType;
     int best;
+    int highScore;
     Handler timerHandler;
     ArrayList<String> resultListLast5;
     MediaPlayer mediaPlayer;
@@ -70,13 +73,13 @@ public class ActionActivity extends AppCompatActivity{
             seconds = seconds % 60;
             if(trainingValueCounter - seconds > 0 && timeTrainingRun) {
                 Log.i("Timer","Timer");
-                textScoreRemaining.setText(String.valueOf(trainingValueCounter - seconds )+ " sec");
+                textScoreRemaining.setText(String.valueOf(trainingValueCounter - seconds) + SEC);
                 timerHandler.postDelayed(this, 500);
             }
             else{
                 timeTrainingRun = false;
                 textScoreRemaining.setText("0");
-                textScoreCurrent.setText("END");
+                textScoreCurrent.setText(R.string.end);
                 buttonAgain.setVisibility(View.VISIBLE);
                 buttonAgain.setEnabled(true);
                 buttonAllResults.setVisibility(View.VISIBLE);
@@ -89,23 +92,23 @@ public class ActionActivity extends AppCompatActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_action);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         Intent intent = getIntent();
         visualStimulus = intent.getBooleanExtra("Visual",false);
         soundStimulus = intent.getBooleanExtra("Sound",false);
-        sound = intent.getIntExtra("SoundFile",0);
+        sound = intent.getParcelableExtra("SoundFile");
         amplitude = intent.getIntExtra("Amplitude",20000);
         timeSetTraining = intent.getBooleanExtra("TrainingTimeMode",true);
         punchSetTrainig = intent.getBooleanExtra("TrainingPunchCounter",false);
         trainingValueCounter = intent.getIntExtra("TrainingValue",60);
         savedTraningValues = trainingValueCounter;
         trainingType = intent.getIntExtra("TrainingType",1);
-        resultsList = new ArrayList<Long>();
-        Log.i("Training type",String.valueOf(trainingType));
-        if(sound != 0 && soundStimulus){
-            mediaPlayer = new MediaPlayer();
-            Log.i("Sound",String.valueOf(sound));
-            //mediaPlayer.selectTrack(sound);
-        }
+        resultsList = new ArrayList<>();
+        Log.i("AMPLITUDE", String.valueOf(amplitude));
+        if (sound != null && soundStimulus) {
+            mediaPlayer = MediaPlayer.create(getApplicationContext(), sound);
+        } else
+            soundStimulus = false;
         relativeLayout = (RelativeLayout) findViewById(R.id.actionActivity_RelativeLayout_main);
         textScore1 = (TextView) findViewById(R.id.actionActivity_TextScores_1);
         textScore2 = (TextView) findViewById(R.id.actionActivity_TextScores_2);
@@ -153,17 +156,21 @@ public class ActionActivity extends AppCompatActivity{
         textScore5.setText(resultListLast5.get(4));
 
         dbHelper = new DBHelper(getApplicationContext());
-        textScoreBestEver.setText("BEST: " + dbHelper.getBestScore() + " ms");
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        highScore = sharedPreferences.getInt(getString(R.string.saved_best_score), 0);
+        Log.i("highScore", String.valueOf(highScore));
         textScoreLastScores.setText("LAST: " + dbHelper.getPreviousScore() + " ms");
+        textScoreBestEver.setText("BEST: " + String.format("%d", highScore) + " ms");
         startTraining();
     }
     private void startTraining(){
+        dbHelper.deleteAll();
         if(punchSetTrainig){
             textScoreRemaining.setText(String.valueOf(trainingValueCounter));
         }
         if(timeSetTraining){
             timerHandler = new Handler();
-            textScoreRemaining.setText(String.valueOf(trainingValueCounter) + "sec");
+            textScoreRemaining.setText(String.valueOf(trainingValueCounter) + SEC);
             startTime = System.currentTimeMillis();
             timerHandler.post(timerRunnable);
             timeTrainingRun = true;
@@ -173,6 +180,7 @@ public class ActionActivity extends AppCompatActivity{
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         timeTrainingRun = false;
         stopRunner();
         Intent intent = new Intent(this, MainActivity.class);
@@ -187,7 +195,7 @@ public class ActionActivity extends AppCompatActivity{
             @Override
             public void run() {
                 Log.i("testMiddle","test2");
-                textScoreCurrent.setText("Prepare");
+                textScoreCurrent.setText(R.string.prepare);
             }
         });
         final Handler h = new Handler();
@@ -195,17 +203,15 @@ public class ActionActivity extends AppCompatActivity{
             @Override public void run() {
                 Log.i("test2","test2");
                 if(trainingType == 1) {
-                    if (soundStimulus)
-                        Log.i("test3","test2");
                     startRunner();
-                    textScoreCurrent.setText("HIT!");
+                    textScoreCurrent.setText(R.string.hit);
                     if (visualStimulus)
                         relativeLayout.setBackgroundColor(Color.RED);
                     if (soundStimulus)
                         mediaPlayer.start();
                 }else if(trainingType == 2){
                     if(Math.random() < 0.33){
-                        textScoreCurrent.setText("NOT!");
+                        textScoreCurrent.setText(R.string.not);
                         if (visualStimulus)
                             relativeLayout.setBackgroundColor(Color.GREEN);
                         if (soundStimulus)
@@ -214,7 +220,7 @@ public class ActionActivity extends AppCompatActivity{
                         h.removeCallbacks(this);
                     }else{
                         startRunner();
-                        textScoreCurrent.setText("HIT!");
+                        textScoreCurrent.setText(R.string.hit);
                         if (visualStimulus)
                             relativeLayout.setBackgroundColor(Color.RED);
                         if (soundStimulus)
@@ -303,6 +309,14 @@ public class ActionActivity extends AppCompatActivity{
                 if(best == 0 || result < best ){
                     best = result;
                     textScoreBest.setText(String.valueOf(result) + "ms");
+                    if (highScore == 0 || best < highScore) {
+                        Log.i("new best", String.valueOf(best));
+                        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putInt(getString(R.string.saved_best_score), best);
+                        editor.commit();
+                        textScoreBestEver.setText("BEST: " + String.format("%d", best) + " ms");
+                    }
                 }
                 resultListLast5.add(String.valueOf(result));
                 if(resultListLast5.size() > 4 && !resultListLast5.get(5).matches("x")){
@@ -324,7 +338,7 @@ public class ActionActivity extends AppCompatActivity{
                         start();
                     }else{
                         textScoreRemaining.setText("0");
-                        textScoreCurrent.setText("END");
+                        textScoreCurrent.setText(R.string.end);
                         buttonAgain.setVisibility(View.VISIBLE);
                         buttonAgain.setEnabled(true);
                         buttonAllResults.setVisibility(View.VISIBLE);

@@ -1,14 +1,21 @@
 package com.example.root.hitdetector;
 
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
 public class MainActivity extends AppCompatActivity {
@@ -46,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     Boolean stimulusVisual = false;
     int trainingTimePunchCount = 0;
     long amplitudeSet = 20000;
-    int sound = R.raw.punch;
+    Uri sound = Uri.parse("android.resource://com.example.root.hitdetector/R.raw.bell");
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,14 +65,14 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 stimulusSound = toggleButtonStimulusSound.isChecked();
                 if(stimulusSound){
-                    setupToogleUnlocked(true);
+                    setupToggleUnlocked(true);
                     setupToggleUnchecked();
                     toggleButtonSoundGong.setChecked(true);
-                    setSound(R.raw.punch);
+                    setSound(R.raw.bell);
                 }else{
                     setupToggleUnchecked();
-                    setupToogleUnlocked(false);
-                    sound = 0;
+                    setupToggleUnlocked(false);
+                    sound = null;
                 }
             }
         });
@@ -83,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 setupToggleUnchecked();
                 toggleButtonSoundGong.setChecked(true);
-                setSound(R.raw.punch);
+                setSound(R.raw.bell);
             }
         });
         toggleButtonSoundShoot = (ToggleButton) findViewById(R.id.mainactivity_tooglebutton_sound_shoot);
@@ -92,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 setupToggleUnchecked();
                 toggleButtonSoundShoot.setChecked(true);
-                setSound(R.raw.punch);
+                setSound(R.raw.shot);
             }
         });
         toggleButtonSoundBeep = (ToggleButton) findViewById(R.id.mainactivity_tooglebutton_sound_beep);
@@ -101,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 setupToggleUnchecked();
                 toggleButtonSoundBeep.setChecked(true);
-                setSound(R.raw.punch);
+                setSound(R.raw.beep);
             }
         });
         toggleButtonSoundWhistle = (ToggleButton) findViewById(R.id.mainactivity_tooglebutton_sound_whistle);
@@ -110,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 setupToggleUnchecked();
                 toggleButtonSoundWhistle.setChecked(true);
-                setSound(R.raw.punch);
+                setSound(R.raw.whistle);
             }
         });
         toggleButtonSoundHajime = (ToggleButton) findViewById(R.id.mainactivity_tooglebutton_sound_hajime);
@@ -119,21 +126,32 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 setupToggleUnchecked();
                 toggleButtonSoundHajime.setChecked(true);
-                setSound(R.raw.punch);
+                setSound(R.raw.beep);
             }
         });
         buttonPickSound = (Button) findViewById(R.id.mainactivity_button_pickSound);
-        //TODO implement
+        buttonPickSound.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (stimulusSound) {
+                    Toast.makeText(getApplicationContext(), R.string.wait_prompt, Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(MainActivity.this, TestActivity.class);
+                    intent.putExtra("Sound", sound);
+                    startActivityForResult(intent, 1);
+                }
+            }
+        });
         mSeekBarAmplitude = (SeekBar) findViewById(R.id.mainactivity_seekbar);
         mAmplitudeView = (TextView) findViewById(R.id.mainactivity_amplitude);
         mSeekBarAmplitude.setProgress(50);
+        Log.i("Progres", "progres");
         mSeekBarAmplitude.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             int progress = 50;
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 progress = i;
-                float factor = 10000 * progress/100;
-                amplitudeSet = 15000 + (long)factor;
+                float factor = 15000 * progress / 100;
+                amplitudeSet = 10000 + (long) factor;
                 mAmplitudeView.setText(String.valueOf(amplitudeSet));
             }
             @Override
@@ -149,8 +167,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if(toggleButtonTrainingTime.isChecked()){
                     toggleButtonPunchCounter.setChecked(false);
-                    textViewCounter.setText("90 sec");
                     trainingTimePunchCount = 90;
+                    textViewCounter.setText("90 sec");
                 }else
                     toggleButtonTrainingTime.setChecked(true);
             }
@@ -161,8 +179,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 if(toggleButtonPunchCounter.isChecked()){
                     toggleButtonTrainingTime.setChecked(false);
-                    textViewCounter.setText("30");
                     trainingTimePunchCount = 30;
+                    textViewCounter.setText(String.format("%d", trainingTimePunchCount));
                 }else
                     toggleButtonPunchCounter.setChecked(true);
             }
@@ -206,7 +224,10 @@ public class MainActivity extends AppCompatActivity {
         mBestView = (TextView) findViewById(R.id.mainactivity_text_best);
         mLastView = (TextView) findViewById(R.id.mainactivity_text_last);
         DBHelper dbHelper = new DBHelper(getApplicationContext());
-        mBestView.setText("BEST: "+ dbHelper.getBestScore()+" ms");
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        int highScore = sharedPreferences.getInt(getString(R.string.saved_best_score), 0);
+        Log.i("HighScore", String.valueOf(highScore));
+        mBestView.setText("BEST: " + String.format("%d", highScore) + " ms");
         mLastView.setText("LAST: "+dbHelper.getPreviousScore()+" ms");
         toggleButtonTrainingReaction = (ToggleButton) findViewById(R.id.mainactivity_tooglebutton_Training_reaction);
         toggleButtonTrainingReaction.setOnClickListener(new View.OnClickListener() {
@@ -256,11 +277,36 @@ public class MainActivity extends AppCompatActivity {
         });
         trainingTimePunchCount = 90;
         textViewCounter.setText(String.valueOf(trainingTimePunchCount) + " sec");
+        setupToggleUnlocked(false);
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1) {
+            if (resultCode == Activity.RESULT_OK) {
+                amplitudeSet = data.getLongExtra("Amplitude", 20000);
+                Log.i("Returned Amplitude", String.valueOf(amplitudeSet));
+                amplitudeSet += 1000;
+                Log.i("Returned Amplitude", String.valueOf(amplitudeSet));
+                if (amplitudeSet < 10000) {
+                    amplitudeSet = 10000;
+                }
+                Log.i("Returned Amplitude", String.valueOf(amplitudeSet));
+                mAmplitudeView.setText(String.valueOf(amplitudeSet));
+                double factor = ((double) amplitudeSet / (double) 25000);
+                Log.i("Returned Amplitude", String.valueOf(factor));
+                int value = (int) (100 * factor);
+                Log.i("Returned Amplitude", String.valueOf(value));
+                mSeekBarAmplitude.setProgress(value);
+            }
+        }
     }
 
     private void setSound(int sound){
-        this.sound = sound;
+        Uri uri = Uri.parse("android.resource://com.example.root.hitdetector/" + sound);
+        MediaPlayer mp = MediaPlayer.create(getApplicationContext(), uri);
+        mp.start();
+        this.sound = uri;
     }
 
     private void setupToggleUnchecked() {
@@ -270,7 +316,8 @@ public class MainActivity extends AppCompatActivity {
         toggleButtonSoundWhistle.setChecked(false);
         toggleButtonSoundHajime.setChecked(false);
     }
-    private void setupToogleUnlocked(boolean block){
+
+    private void setupToggleUnlocked(boolean block) {
         toggleButtonSoundGong.setEnabled(block);
         toggleButtonSoundShoot.setEnabled(block);
         toggleButtonSoundBeep.setEnabled(block);

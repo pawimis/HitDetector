@@ -1,23 +1,23 @@
 package com.example.root.hitdetector;
 
-import java.util.ArrayList;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
+import android.database.sqlite.SQLiteOpenHelper;
 
-public class DBHelper extends SQLiteOpenHelper {
+import java.util.ArrayList;
 
-    public static final String DATABASE_NAME = "SCORES_DATABASE";
-    public static final String SCORES_TABLE_NAME = "scores";
-    public static final String SCORES_COLUMN_ID = "id";
-    public static final String SCORES_COLUMN_TIME = "time";
-    public static final String SCORES_COLUMN_DATE = "date";
+class DBHelper extends SQLiteOpenHelper {
 
-    public DBHelper(Context context) {
+    private static final String DATABASE_NAME = "SCORES_DATABASE";
+    private static final String SCORES_TABLE_NAME = "scores";
+    private static final String SCORES_COLUMN_ID = "id";
+    private static final String SCORES_COLUMN_TIME = "time";
+    private static final String SCORES_COLUMN_DATE = "date";
+
+    DBHelper(Context context) {
         super(context, DATABASE_NAME , null, 2);
     }
 
@@ -39,7 +39,7 @@ public class DBHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public boolean insertRecord (String time) {
+    boolean insertRecord(String time) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put(SCORES_COLUMN_TIME, time);
@@ -49,40 +49,29 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public int numberOfRows(){
         SQLiteDatabase db = this.getReadableDatabase();
-        int numRows = (int) DatabaseUtils.queryNumEntries(db, SCORES_TABLE_NAME);
-        return numRows;
+        return (int) DatabaseUtils.queryNumEntries(db, SCORES_TABLE_NAME);
     }
-    public void deleteAll(){
+
+    void deleteAll() {
         SQLiteDatabase db = this.getWritableDatabase();
         db.execSQL("DELETE FROM "+SCORES_TABLE_NAME);
         db.close();
     }
-    public String getBestScore(){
+
+    String getPreviousScore() {
         SQLiteDatabase db = this.getReadableDatabase();
         String results = "--";
-        Cursor res = db.rawQuery("select MIN("+SCORES_COLUMN_TIME+") as time from "+SCORES_TABLE_NAME+" LIMIT 1",null);
-        if(res.getCount()>0){
-            res.moveToFirst();
-            results = res.getString(res.getColumnIndex(SCORES_COLUMN_TIME));
-            if(results == null){
-                results = "--";
-            }
-        }
-        return results;
-    }
-    public String getPreviousScore(){
-        SQLiteDatabase db = this.getReadableDatabase();
-        String results = "--";
-        Cursor res = db.rawQuery("select "+SCORES_COLUMN_TIME+" from "+SCORES_TABLE_NAME+" ORDER BY "+SCORES_COLUMN_DATE+" DESC LIMIT 1",null);
+        Cursor res = db.rawQuery("select " + SCORES_COLUMN_TIME + " from " + SCORES_TABLE_NAME + " ORDER BY " + SCORES_COLUMN_ID + " DESC LIMIT 1", null);
         if(res.getCount()>0){
             res.moveToFirst();
             results = res.getString(res.getColumnIndex(SCORES_COLUMN_TIME));
         }
+        res.close();
         return results;
     }
 
-    public ArrayList<String> getAllContacts() {
-        ArrayList<String> array_list = new ArrayList<String>();
+    ArrayList<String> getAllContacts() {
+        ArrayList<String> array_list = new ArrayList<>();
 
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor res =  db.rawQuery( "select * from "+SCORES_TABLE_NAME+" ORDER BY DATE DESC", null );
@@ -90,11 +79,12 @@ public class DBHelper extends SQLiteOpenHelper {
         res.moveToFirst();
 
         while(!res.isAfterLast()){
-            sb.append(res.getString(res.getColumnIndex(SCORES_COLUMN_TIME)) + " ,: " + res.getString(res.getColumnIndex(SCORES_COLUMN_DATE)));
+            sb.append(res.getString(res.getColumnIndex(SCORES_COLUMN_TIME))).append(" ,: ").append(res.getString(res.getColumnIndex(SCORES_COLUMN_DATE)));
             array_list.add(sb.toString());
             sb.setLength(0);
             res.moveToNext();
         }
+        res.close();
         return array_list;
     }
 }
